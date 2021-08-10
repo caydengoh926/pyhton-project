@@ -12,9 +12,42 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 
 from meiduo_mall.utils.response_code import RETCODE
 from users.models import User
-
+from celery_tasks.email.tasks import send_verify_email
 from meiduo_mall.utils.views import LoginRequiredJSONMixin
+from users.utils import generate_verify_email_url, check_verify_email_token
 logger = logging.getLogger('django')
+
+
+class AddressView(View):
+
+    def get(self, request):
+
+        return render(request, 'user_center_site.html')
+
+
+class VerifyEmailView(View):
+
+    def get(self, request):
+
+        token = request.GET.get('token')
+
+        if not token:
+            return http.HttpResponseForbidden('no token')
+
+        user = check_verify_email_token(token)
+        if not user:
+            return http.HttpResponseBadRequest('invalid token')
+
+        try:
+            user.email_active = True
+            user.save()
+        except Exception as e:
+            logger.error(e)
+            return http.HttpResponseServerError('verify email failed')
+
+        return redirect(reverse('users:info'))
+
+        pass
 
 
 class EmailView(LoginRequiredJSONMixin, View):
@@ -34,9 +67,10 @@ class EmailView(LoginRequiredJSONMixin, View):
             logger.error(e)
             return http.JsonResponse({'code':RETCODE.DBERR, 'errmsg':'add email failed'})
 
+        verify_url = generate_verify_email_url(request.user)
+        send_verify_email.delay(email, verify_url)
+
         return http.JsonResponse({'code':RETCODE.OK, 'errmsg':'OK'})
-
-
 
 
 class UserInfoView(LoginRequiredMixin, View):
