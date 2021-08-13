@@ -106,7 +106,6 @@ class QQAuthUserView(View):
         return response
 
 
-
 class QQAuthURLView(View):
 
     def get(self, request):

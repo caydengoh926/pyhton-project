@@ -18,8 +18,8 @@ let vm = new Vue({
         provinces: [],
         cities: [],
         districts: [],
-        addresses: JSON.parse(JSON.stringify(addresses)),
-        default_address_id: default_address_id,
+        addresses: {},//JSON.parse(JSON.stringify(addresses)),
+        default_address_id: '',
         editing_address_index: '',
         edit_title_index: '',
         new_title: '',
@@ -33,6 +33,7 @@ let vm = new Vue({
     mounted() {
         // 获取省份数据
         this.get_provinces();
+        this.get_address();
     },
     watch: {
         // 监听到省份id变化
@@ -121,7 +122,7 @@ let vm = new Vue({
         },
         // 校验手机号
         check_mobile(){
-            let re = /^1[3-9]\d{9}$/;
+            let re = /^01[3-9]\d{7}$/;
             if(re.test(this.form_address.mobile)) {
                 this.error_mobile = false;
             } else {
@@ -296,7 +297,7 @@ let vm = new Vue({
                 alert("请填写标题后再保存！");
             } else {
                 let url = '/addresses/' + this.addresses[index].id + '/title/';
-                axios.put(url, {
+                axios.put(url,{
                     title: this.new_title
                 }, {
                     headers: {
@@ -320,5 +321,25 @@ let vm = new Vue({
                     })
             }
         },
+
+        get_address(){
+            let url = '/getaddresses/';
+            axios.get(url, {}, {
+                responseType: 'json'
+            })
+                .then(response=>{
+                    if (response.data.code == '0') {
+                        this.addresses = response.data.addresses;
+                        this.default_address_id = response.data.default_address_id;
+                        } else if (response.data.code == '4101') {
+                            location.href = '/login/?next=/addresses/';
+                        } else {
+                            alert(response.data.errmsg);
+                        }
+                })
+                .catch(error=>{
+                    console.log(error.response);
+                })
+        }
     }
 });
