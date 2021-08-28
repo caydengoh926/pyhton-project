@@ -17,4 +17,4 @@ class Area(models.Model):
         verbose_name_plural = '省市区'
 
     def __str__(self):
-        return self.nam
+        return self.name

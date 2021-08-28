@@ -14,6 +14,7 @@ from meiduo_mall.utils.response_code import RETCODE
 from oauth.models import OauthQQUser
 from oauth.utils import generate_access_token, check_access_token
 from users.models import User
+from carts.utils import merge_carts_cookie_redis
 
 # Create your views here.
 logger = logging.getLogger('django')
@@ -51,6 +52,8 @@ class QQAuthUserView(View):
             response = redirect(next)
 
             response.set_cookie('username', oauth_user.user.username, max_age=3600 * 24 * 15)
+
+            response = merge_carts_cookie_redis(request, oauth_user.user, response)
 
             return response
 
@@ -103,7 +106,10 @@ class QQAuthUserView(View):
 
         response.set_cookie('username', oauth_qq_user.user.username, max_age=3600 * 24 * 15)
 
+        response = merge_carts_cookie_redis(request, user, response)
+
         return response
+
 
 
 class QQAuthURLView(View):

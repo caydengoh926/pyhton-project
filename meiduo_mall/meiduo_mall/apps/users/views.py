@@ -16,7 +16,96 @@ from celery_tasks.email.tasks import send_verify_email
 from meiduo_mall.utils.views import LoginRequiredJSONMixin
 from users.utils import generate_verify_email_url, check_verify_email_token
 from . import constants
+from goods.models import SKU
+from carts.utils import merge_carts_cookie_redis
 logger = logging.getLogger('django')
+
+
+class UserBrowseHistory(LoginRequiredJSONMixin, View):
+
+    def post(self, request):
+
+        json_str = request.body.decode('utf8')
+        json_dict = json.loads(json_str)
+        sku_id = json_dict.get('sku_id')
+
+        try:
+            SKU.objects.get(id = sku_id)
+        except SKU.DoesNotExist:
+            return http.HttpResponseForbidden('sku_id not found')
+
+        redis_conn = get_redis_connection('history')
+        user = request.user
+
+        pl = redis_conn.pipeline()
+        pl.lrem('history_%s' % user.id, 0, sku_id )
+
+        pl.lpush('history_%s' % user.id, sku_id)
+
+        pl.ltrim('history_%s' % user.id, 0, 4)
+
+        pl.execute()
+
+        return http.JsonResponse({'code':RETCODE.OK, 'errmsg':'OK'})
+
+    def get(self, request):
+
+        user = request.user
+
+        redis_conn = get_redis_connection('history')
+
+        sku_ids = redis_conn.lrange('history_%s' % user.id, 0, -1)
+
+        skus = []
+        for sku_id in sku_ids:
+            sku = SKU.objects.get(id = sku_id)
+            skus.append({
+                'id': sku.id,
+                'name': sku.name,
+                'price': sku.price,
+                'default_image_url': sku.default_image.url
+            })
+
+        return http.JsonResponse({'code':RETCODE.OK, 'errmsg': 'OK', 'skus':skus})
+
+
+class ChangePasswordView(LoginRequiredMixin, View):
+
+    def get(self, request):
+
+        return render(request, 'user_center_pass.html')
+
+    def post(self, request):
+
+        old_password = request.POST.get('old_password')
+        new_password = request.POST.get('new_password')
+        new_password2 = request.POST.get('new_password2')
+
+        if not all([old_password, new_password, new_password2]):
+            return http.HttpResponseForbidden('parameter empty')
+
+        try:
+            request.user.check_password(old_password)
+        except Exception as e:
+            logger.error(e)
+            return render(request, 'user_center_pass.html', {'origin_pwd_errmsg': '原始密码错误'})
+        if not re.match(r'^[0-9A-Za-z]{8,20}$', new_password):
+            return http.HttpResponseForbidden('密码最少8位，最长20位')
+        if new_password != new_password2:
+            return http.HttpResponseForbidden('new password not match with second')
+
+        try:
+            request.user.set_password(new_password)
+            request.user.save()
+        except Exception as e:
+            logger.error(e)
+            return render(request, 'user_center_pass.html', {'change_pwd_errmsg': '修改密码失败'})
+
+        logout(request)
+        response = redirect(reverse('users:login'))
+        response.delete_cookie('username')
+
+        return response
 
 
 class UpdateTitleAddressView(LoginRequiredJSONMixin, View):
@@ -250,7 +339,7 @@ class GetAddress(LoginRequiredJSONMixin, View):
                 "email": address.email
             }
             address_list.append(address_dict)
-            default_address_id = login_user.default_address_id
+        default_address_id = login_user.default_address_id
 
         return http.JsonResponse({'code':RETCODE.OK, 'errmsg':'get addresss successful', 'addresses':address_list, 'default_address_id': default_address_id})
 
@@ -369,6 +458,8 @@ class LoginView(View):
             response = redirect(reverse('contents:index'))
 
         response.set_cookie('username', user.username, max_age=3600 * 24 * 15)
+
+        response = merge_carts_cookie_redis(request, user, response)
 
         return response
 
