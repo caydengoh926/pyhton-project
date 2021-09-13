@@ -19,6 +19,90 @@ from meiduo_mall.utils.response_code import RETCODE
 # Create your views here.
 
 
+class OrderCommentView(LoginRequiredMixin, View):
+
+    def get(self, request):
+
+        order_id = request.GET.get('order_id')
+        user = request.user
+
+        try:
+            OrderInfo.objects.get(order_id= order_id, user = user)
+        except OrderInfo.DoesNotExist:
+            return http.HttpResponseNotFound('orderid doesnt exist')
+
+        try:
+            uncomment_goods = OrderGoods.objects.filter(order_id= order_id, is_commented= False)
+        except Exception as e:
+            return http.HttpResponseServerError('orders incorrect')
+
+        uncomment_goods_list = []
+        for goods in uncomment_goods:
+            uncomment_goods_list.append({
+                'order_id' : goods.order.order_id,
+                'sku_id' : goods.sku.id,
+                'name' : goods.sku.name,
+                'price' : str(goods.price),
+                'score' : goods.score,
+                'comments' : goods.comment,
+                'default_image' : goods.sku.default_image.url,
+                'is_anonymous' : str(goods.is_anonymous)
+            })
+
+        context = {
+            'uncomment_goods_list': json.dumps(uncomment_goods_list)
+        }
+
+        return render(request, 'goods_judge.html', context)
+
+    def post(self, request):
+
+        json_str = request.body.decode('utf8')
+        json_dict = json.loads(json_str)
+        order_id = json_dict.get('order_id')
+        sku_id = json_dict.get('sku_id')
+        comment = json_dict.get('comment')
+        score = json_dict.get('score')
+        is_anonymous = json_dict.get('is_anonymous')
+        user = request.user
+
+        if not all([order_id, sku_id, comment, score]):
+            return http.HttpResponseForbidden('缺少必传参数')
+
+        try:
+            OrderInfo.objects.filter(order_id=order_id, user = user, status= OrderInfo.ORDER_STATUS_ENUM['UNCOMMENT'])
+        except OrderInfo.DoesNotExist:
+            return http.HttpResponseForbidden('orderid parameter incorrect')
+
+        try:
+            sku = SKU.objects.get(id=sku_id)
+        except SKU.DoesNotExist:
+            return http.HttpResponseForbidden('sku incorrect')
+
+        if is_anonymous:
+            if not isinstance(is_anonymous, bool):
+                return http.HttpResponseForbidden('参数is_anonymous错误')
+
+        OrderGoods.objects.filter(order_id=order_id, sku_id= sku_id, is_commented= False).update(
+            comment = comment,
+            score = score,
+            is_anonymous = is_anonymous,
+            is_commented = True
+        )
+        comments = sku.comments + 1
+        SKU.objects.filter(id=sku_id).update(comments = comments)
+        sku.spu.comments += 1
+        sku.spu.save()
+        # sku.save()
+
+        if OrderGoods.objects.filter(order_id=order_id, sku_id= sku_id, is_commented= False).count() == 0:
+            OrderInfo.objects.filter(order_id=order_id).update(
+                status = OrderInfo.ORDER_STATUS_ENUM['FINISHED']
+            )
+
+        return http.JsonResponse({'code':RETCODE.OK, 'errmsg': 'Comment successful'})
+
+
 class UserOrderInfoView(LoginRequiredMixin, View):
 
     def get(self, request, page_num):
@@ -80,10 +164,6 @@ class OrderSuccessView(LoginRequiredMixin, View):
 
 
 class OrderCommitView(LoginRequiredJSONMixin, View):
-
-    def get(self, request):
-
-        pass
 
     def post(self, request):
 

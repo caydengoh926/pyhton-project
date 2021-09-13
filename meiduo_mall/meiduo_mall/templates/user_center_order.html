@@ -116,8 +116,8 @@
 	<script type="text/javascript">
         $(function () {
             $('#pagination').pagination({
-                currentPage: 1,
-                totalPage: 3,
+                currentPage: {{ page_num }},
+                totalPage: {{ total_page }},
                 callback:function (current) {
                      location.href = '/orders/info/' + current + '/';
                 }

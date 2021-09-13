@@ -12,8 +12,31 @@ from models import GoodsCategory, SKU, GoodsVisitCount
 from contents.utils import get_categories
 from utils import get_bread_crumb
 from meiduo_mall.utils.response_code import RETCODE
+from orders.models import OrderGoods, OrderInfo
 
 # Create your views here.
+
+
+class GoodsCommentView(View):
+
+    def get(self, request, sku_id):
+
+        try:
+            order_goods_list = OrderGoods.objects.filter(sku_id=sku_id, is_commented=True).order_by('-create_time')[:30]
+        except Exception as e:
+            return http.HttpResponseNotFound('sku id incorrect')
+
+        comment_list = []
+        for order_goods in order_goods_list:
+            username = order_goods.order.user.username
+            comment_list.append({
+                'username' : username[0] + '***' + username[-1] if order_goods.is_anonymous else username,
+                'comment' : order_goods.comment,
+                'score' : order_goods.score
+            })
+
+        return http.JsonResponse({'code': RETCODE.OK, 'errmsg':'OK', 'comment_list':comment_list})
+
 
 
 class DetailVisitView(View):
@@ -45,9 +68,6 @@ class DetailVisitView(View):
             return http.HttpResponseServerError('count failed')
 
         return http.JsonResponse({'code':RETCODE.OK, 'errmsg':'OK'})
-
-
-        pass
 
 
 class DetailView(View):

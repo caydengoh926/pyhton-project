@@ -8,7 +8,7 @@ urlpatterns= [
 
     url(r'^orders/success/$', views.OrderSuccessView.as_view()),
 
-    url(r'^orders/comment/$', views.OrderCommitView.as_view()),
+    url(r'^orders/comment/$', views.OrderCommentView.as_view()),
 
     url(r'^orders/info/(?P<page_num>\d+)/$', views.UserOrderInfoView.as_view(), name='info'),
 ]

@@ -1,0 +1,11 @@
+PyMySQL==0.10.1
+itsdangerous==1.1.0
+Jinja2==2.11.3
+alipay==0.7.4
+Django==1.11.11
+django_redis==4.10.0
+twilio==6.62.1
+celery==4.4.7
+django_haystack==3.1.1
+Pillow==8.3.2
+QQLoginTool==0.3.0

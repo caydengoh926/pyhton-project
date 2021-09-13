@@ -18,6 +18,7 @@ import sys
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 print(sys.path)
+print(os.path)
 
 sys.path.insert(0, os.path.join(BASE_DIR, 'apps'))
 
@@ -30,7 +31,7 @@ SECRET_KEY = '5!2lo52h2=*3l4v6eoaho4%aio^j1i#wyz5-9&h(7gktx0g=5n'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['www.meiduo.site']
+ALLOWED_HOSTS = ['www.meiduo.site', '127.0.0.1', '192.168.37.128']
 
 
 # Application definition
@@ -43,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_crontab',
+    'corsheaders',
 
     'haystack', # 全文检索
     'users',
@@ -52,9 +54,12 @@ INSTALLED_APPS = [
     'goods',
     'carts',
     'orders',
+    'payment',
+    'meiduo_admin',
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -280,3 +285,60 @@ CRONJOBS = [
 CRONTAB_COMMAND_PREFIX = 'LANG_ALL=zh_cn.UTF-8'
 
 DATABASE_ROUTERS = ['meiduo_mall.utils.db_router.MasterSlaveDBRouter']
+
+ALIPAY_PID = '2088621978031452'
+ALIPAY_DEBUG = True
+ALIPAY_URL = 'https://mapi.alipaydev.com/gateway.do'
+ALIPAY_RETURN_URL = 'http://www.meiduo.site:8001/payment/status/'
+
+# CORS_ALLOWED_ORIGINS = [
+#     'http://192.168.1.3:8080',
+#     'http://127.0.0.1:8080',
+#     'http://127.0.0.1:8001',
+#     'http://192.168.37.128:8001',
+#     'http://localhost:8080',
+#     'http://219.93.129.117:8080',
+#     'http://www.meiduo.site:8001',
+#     'http://api.meiduo.site:8000'
+# ]
+
+# CORS
+CORS_ORIGIN_WHITELIST = (
+    'http://192.168.1.10:8080',
+    'http://219.93.129.117:8080',
+    'http://127.0.0.1:8080',
+    'http://127.0.0.1:8001',
+    'http://192.168.37.128:8001',
+    'http://localhost:8080',
+    'http://www.meiduo.site:8001',
+    'http://api.meiduo.site:8000'
+)
+
+# CORS_ORIGIN_WHITELIST = ( '*')
+
+# CORS_ORIGIN_ALLOW_ALL = True
+
+CORS_ALLOW_CREDENTIALS = True  # 允许携带cookie
+
+# CORS_ALLOW_ALL_ORIGINS = True
+
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]
+
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
