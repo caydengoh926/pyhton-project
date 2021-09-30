@@ -440,7 +440,7 @@ class LoginView(View):
         if not re.match(r'^[0-9A-Za-z]{8,20}$', password):
             return http.HttpResponseForbidden('请输入8-20位的密码')
 
-        user = authenticate(username=username, password=password)
+        user = authenticate(request, username=username, password=password)
         if user is None:
             return render(request, 'login.html', {'account_errmsg':'username or password incorrect'})
         login(request, user)

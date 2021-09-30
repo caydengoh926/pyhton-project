@@ -51,11 +51,22 @@ def get_user_by_account(account):
 class UsernameMobileBackend(ModelBackend):
 
     def authenticate(self, request, username=None, password=None, **kwargs):
-        # print(type(password))
-        user = get_user_by_account(username)
 
-        if user and user.check_password(password):
-            return user
+        if request is None:
+            # backend login verify
+            try:
+                user = User.objects.get(username=username, is_staff=True)
+            except:
+                user = None
+            if user is not None and user.check_password(password):
+                return user
+
         else:
-            return None
+            # print(type(password))
+            user = get_user_by_account(username)
+
+            if user and user.check_password(password):
+                return user
+            else:
+                return None
 

@@ -39,5 +39,5 @@ urlpatterns = [
 
     url(r'^', include('payment.urls', namespace='payment')),
 
-    # url('^meiduo_admin/', include('meiduo_admin.urls')),
+    url('^meiduo_admin/', include('meiduo_admin.urls')),
 ]
