@@ -4,7 +4,7 @@ from rest_framework_jwt.views import obtain_jwt_token
 from rest_framework.routers import DefaultRouter
 
 from views import statistical, eusers
-from .views import specs, images, skus, order, permissions, group, admin, spus
+from .views import specs, images, skus, order, permissions, group, admin, spus, options, goodschannels, brands
 
 urlpatterns = [
     # url(r'^', admin.site.urls),
@@ -45,7 +45,23 @@ urlpatterns = [
 
     url(r'^goods/images/$', spus.SpuView.as_view({'post':'image'})),
 
+    url(r'^goods/specs/simple/$', options.OptionView.as_view({'get':'simple'})),
+
+    url(r'^goods/channel_types/$', goodschannels.GoodsChannelView.as_view({'get':'channel_types'})),
+
+    url(r'^goods/categories/$', goodschannels.GoodsChannelView.as_view({'get':'categories'})),
+
 ]
+
+router = DefaultRouter()
+router.register('goods/brands', brands.BrandsView, base_name='brands')
+print(router.urls)
+urlpatterns += router.urls
+
+router = DefaultRouter()
+router.register('goods/channels', goodschannels.GoodsChannelView, base_name='channels')
+# print(router.urls)
+urlpatterns += router.urls
 
 router = DefaultRouter()
 router.register('goods/specs', specs.SpecsView, base_name='specs')
@@ -84,5 +100,11 @@ urlpatterns += router.urls
 
 router = DefaultRouter()
 router.register('goods', spus.SpuView, base_name='goods')
-print(router.urls)
+# print(router.urls)
 urlpatterns += router.urls
+
+router = DefaultRouter()
+router.register('specs/options', options.OptionView, base_name='options')
+# print(router.urls)
+urlpatterns += router.urls
+
